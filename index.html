@@ -1,0 +1,753 @@
+
+
+<!DOCTYPE html>
+
+<html lang="zh-Hant">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="theme-color" content="#fff8fa">
+
+<title>Annie's Closet ♡</title>
+
+<style>
+
+:root{--pink:#d69baa;--bg:#fff8fa;--ink:#59474d;--line:#f0dce2;--muted:#a68c94}
+
+*{box-sizing:border-box}
+
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC",sans-serif}
+
+header{text-align:center;background:white;padding:27px 14px 22px;border-bottom:1px solid var(--line)}
+
+header h1{font:30px Georgia,serif;margin:0 0 8px}
+
+header p{font-size:11px;letter-spacing:3px;color:var(--muted);margin:0}
+
+main{max-width:780px;margin:auto;padding:18px 14px 45px}
+
+h2{font-size:16px;margin:0 0 16px}
+
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}
+
+.stat{background:white;border:1px solid var(--line);border-radius:13px;padding:14px 6px;text-align:center;min-width:0}
+
+.stat small{display:block;color:var(--muted);font-size:11px;margin-bottom:9px}
+
+.stat strong{font-size:15px;overflow-wrap:anywhere}
+
+.totalbar{background:#f3e3e8;border-radius:12px;padding:15px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+
+.totalbar span{font-size:13px}.totalbar strong{font-size:22px;color:#ae7184}
+
+.panel{background:white;border:1px solid var(--line);border-radius:16px;padding:17px;margin-bottom:16px}
+
+.field{margin-bottom:13px;min-width:0}
+
+label{display:block;font-size:12px;color:#967b84;margin-bottom:6px}
+
+input,select,textarea{width:100%;min-width:0;border:1px solid var(--line);border-radius:9px;background:#fffdfd;padding:12px;color:var(--ink);font:inherit;font-size:14px}
+
+textarea{resize:vertical}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+
+button{font:inherit;cursor:pointer;border:0;border-radius:9px;padding:11px 13px}
+
+.primary{width:100%;background:var(--pink);color:white;font-weight:600}
+
+.secondary{background:#f7e9ed;color:#8f6572}
+
+.danger{background:#fff0f2;color:#a75f70}
+
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+
+.actions button{font-size:12px;padding:8px 11px}
+
+.tools{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:13px}
+
+.record{border-top:1px solid var(--line);padding:15px 0}
+
+.record:first-child{border-top:0}
+
+.recordhead{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+
+.recordname{font-size:15px;font-weight:700;overflow-wrap:anywhere}
+
+.amount{color:#b27689;font-weight:700;font-size:16px;white-space:nowrap}
+
+.meta{font-size:12px;line-height:2;color:var(--muted);overflow-wrap:anywhere;margin:7px 0 10px}
+
+.tag{display:inline-block;padding:4px 8px;border-radius:6px;background:#f8edf0;color:#986e7b;font-size:11px;margin:0 4px 4px 0}
+
+.empty{text-align:center;color:#b39ba2;font-size:13px;padding:26px 0}
+
+.note{font-size:11px;line-height:1.8;color:var(--muted)}
+
+#cancelEdit{display:none;margin-top:9px;width:100%}
+
+#customShopWrap[hidden],#customPayWrap[hidden],#customPickupWrap[hidden]{display:none}
+
+.bar{height:6px;background:#f6e9ed;border-radius:10px;overflow:hidden;margin-top:7px}
+
+.bar span{display:block;height:100%;background:var(--pink);border-radius:10px}
+
+.catrow{padding:12px 0;border-bottom:1px solid var(--line)}
+
+.catrow:last-child{border-bottom:0}
+
+.catline{display:flex;justify-content:space-between;gap:10px;font-size:13px}
+
+.catline strong{color:#b27689}
+
+.footer{text-align:center;color:#b49aa2;font:12px Georgia,serif;letter-spacing:2px;padding:12px}
+
+@media(max-width:370px){.stat strong{font-size:12px}.panel{padding:13px}.grid{gap:0 8px}.totalbar strong{font-size:19px}}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+
+<h1>Annie's Closet ♡</h1>
+
+<p>MY SHOPPING DIARY</p>
+
+</header>
+
+<main>
+
+<section class="stats">
+
+<div class="stat"><small>累積購買金額</small><strong id="allTotal">$0</strong></div>
+
+<div class="stat"><small>購物總筆數</small><strong id="allCount">0 筆</strong></div>
+
+<div class="stat"><small>本月花費</small><strong id="monthTotal">$0</strong></div>
+
+</section>
+
+<div class="totalbar"><span>♡ 所有購物紀錄總計</span><strong id="grandTotal">$0</strong></div>
+
+<section class="panel">
+
+<h2 id="formTitle">♡ 新增購物紀錄</h2>
+
+<form id="shoppingForm">
+
+<div class="field">
+
+<label for="shopChoice">商店名稱 *</label>
+
+<select id="shopChoice" required>
+
+<option value="C99">C99</option>
+
+<option value="Moya">Moya</option>
+
+<option value="Soeo">Soeo</option>
+
+<option value="YB🐑">YB🐑</option>
+
+<option value="TX梨">TX梨</option>
+
+<option value="chih 7 house">chih 7 house</option>
+
+<option value="another">another</option>
+
+<option value="Molyn沐恩">Molyn沐恩</option>
+
+<option value="萱女的衣櫃">萱女的衣櫃</option>
+
+<option value="小貝">小貝</option>
+
+<option value="蝦皮">蝦皮（自行輸入賣家）</option>
+
+<option value="其他">其他（自行輸入）</option>
+
+</select>
+
+</div>
+
+<div class="field" id="customShopWrap" hidden>
+
+<label id="customShopLabel" for="customShop">店家名稱</label>
+
+<input id="customShop" maxlength="100" placeholder="請輸入名稱">
+
+</div>
+
+<div class="field">
+
+<label for="amountInput">購買金額（新台幣）*</label>
+
+<input id="amountInput" type="number" min="0" step="1" required placeholder="請輸入金額">
+
+</div>
+
+<div class="grid">
+
+<div class="field">
+
+<label for="dateInput">購買日期 *</label>
+
+<input id="dateInput" type="date" required>
+
+</div>
+
+<div class="field">
+
+<label for="category">商品分類 *</label>
+
+<select id="category">
+
+<option>服飾</option><option>生活用品</option><option>養樂多</option><option>自媒體周邊</option><option>其他</option>
+
+</select>
+
+</div>
+
+</div>
+
+<div class="field">
+
+<label for="pickup">取貨地點 *</label>
+
+<select id="pickup">
+
+<option value="7-ELEVEN">7-ELEVEN</option>
+
+<option value="全家">全家</option>
+
+<option value="蝦皮">蝦皮</option>
+
+<option value="其他">其他（自行輸入）</option>
+
+</select>
+
+</div>
+
+<div class="field" id="customPickupWrap" hidden>
+
+<label for="customPickup">其他取貨地點 *</label>
+
+<input id="customPickup" maxlength="100" placeholder="請輸入取貨地點">
+
+</div>
+
+<div class="field">
+
+<label for="paymentChoice">付款方式 *</label>
+
+<select id="paymentChoice">
+
+<option value="現金">現金</option>
+
+<option value="安泰分期卡">安泰分期卡</option>
+
+<option value="國泰">國泰</option>
+
+<option value="星展">星展</option>
+
+<option value="蝦皮晚點付">蝦皮晚點付</option>
+
+<option value="其他">其他（自行輸入）</option>
+
+</select>
+
+</div>
+
+<div class="field" id="customPayWrap" hidden>
+
+<label for="customPay">其他付款方式 *</label>
+
+<input id="customPay" maxlength="100" placeholder="請輸入付款方式">
+
+</div>
+
+<div class="field">
+
+<label for="status">貨況 *</label>
+
+<select id="status">
+
+<option>備貨中</option><option>已出貨</option><option>到貨未取</option><option>已取貨</option>
+
+</select>
+
+</div>
+
+<div class="field">
+
+<label for="noteInput">備註（選填）</label>
+
+<textarea id="noteInput" rows="2" maxlength="500" placeholder="商品名稱、顏色、尺寸、訂單編號等"></textarea>
+
+</div>
+
+<button class="primary" type="submit" id="saveBtn">＋ 儲存購物紀錄</button>
+
+<button class="secondary" type="button" id="cancelEdit">取消修改</button>
+
+</form>
+
+<p class="note">♡ 選擇蝦皮或其他店家、其他付款方式、其他取貨地點時，可自行輸入內容。</p>
+
+</section>
+
+<section class="panel">
+
+<h2>♡ 分類花費總表</h2>
+
+<div id="categoryTotals"></div>
+
+</section>
+
+<section class="panel">
+
+<h2>♡ 我的購物清單</h2>
+
+<div class="tools">
+
+<input id="searchInput" placeholder="搜尋店家或備註">
+
+<select id="filterCategory">
+
+<option value="">全部分類</option>
+
+<option>服飾</option><option>生活用品</option><option>養樂多</option><option>自媒體周邊</option><option>其他</option>
+
+</select>
+
+<select id="filterStatus">
+
+<option value="">全部貨況</option>
+
+<option>備貨中</option><option>已出貨</option><option>到貨未取</option><option>已取貨</option>
+
+</select>
+
+<select id="sortOrder">
+
+<option value="new">日期：新到舊</option>
+
+<option value="old">日期：舊到新</option>
+
+<option value="high">金額：高到低</option>
+
+<option value="low">金額：低到高</option>
+
+</select>
+
+</div>
+
+<div id="recordsList"></div>
+
+</section>
+
+<div class="footer">MADE WITH LOVE ♡ ANNIE</div>
+
+</main>
+
+<script>
+
+const STORAGE_KEY='annies_closet_v2';
+
+const $=id=>document.getElementById(id);
+
+const money=n=>'$'+Number(n||0).toLocaleString('zh-TW');
+
+const shops=['C99','Moya','Soeo','YB🐑','TX梨','chih 7 house','another','Molyn沐恩','萱女的衣櫃','小貝'];
+
+const paymentOptions=['現金','安泰分期卡','國泰','星展','蝦皮晚點付'];
+
+const categories=['服飾','生活用品','養樂多','自媒體周邊','其他'];
+
+let records=[];
+
+let editingId=null;
+
+try{
+
+ const saved=localStorage.getItem(STORAGE_KEY);
+
+ records=saved?JSON.parse(saved):[];
+
+ if(!Array.isArray(records))records=[];
+
+}catch(e){records=[];}
+
+function todayString(){
+
+ const d=new Date();
+
+ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+
+}
+
+$('dateInput').value=todayString();
+
+function updateCustomFields(){
+
+ const shop=$('shopChoice').value;
+
+ const customShop=shop==='蝦皮'||shop==='其他';
+
+ $('customShopWrap').hidden=!customShop;
+
+ $('customShopLabel').textContent=shop==='蝦皮'?'蝦皮賣家名稱 *':'其他店家名稱 *';
+
+ $('customShop').placeholder=shop==='蝦皮'?'輸入蝦皮賣家名稱':'請輸入店家名稱';
+
+ $('customShop').required=customShop;
+
+ const otherPay=$('paymentChoice').value==='其他';
+
+ $('customPayWrap').hidden=!otherPay;
+
+ $('customPay').required=otherPay;
+
+ const otherPickup=$('pickup').value==='其他';
+
+ $('customPickupWrap').hidden=!otherPickup;
+
+ $('customPickup').required=otherPickup;
+
+}
+
+$('shopChoice').addEventListener('change',updateCustomFields);
+
+$('paymentChoice').addEventListener('change',updateCustomFields);
+
+$('pickup').addEventListener('change',updateCustomFields);
+
+function getShop(){
+
+ const c=$('shopChoice').value;
+
+ if(c==='蝦皮')return '蝦皮｜'+$('customShop').value.trim();
+
+ if(c==='其他')return $('customShop').value.trim();
+
+ return c;
+
+}
+
+function getPayment(){
+
+ return $('paymentChoice').value==='其他'
+
+  ?$('customPay').value.trim():$('paymentChoice').value;
+
+}
+
+function getPickup(){
+
+ return $('pickup').value==='其他'
+
+  ?$('customPickup').value.trim():$('pickup').value;
+
+}
+
+function saveRecords(){
+
+ try{localStorage.setItem(STORAGE_KEY,JSON.stringify(records));return true;}
+
+ catch(e){alert('儲存失敗，請確認瀏覽器儲存空間，並先備份資料。');return false;}
+
+}
+
+function render(){
+
+ const month=todayString().slice(0,7);
+
+ const total=records.reduce((s,r)=>s+Number(r.amount||0),0);
+
+ const monthly=records.filter(r=>(r.date||'').slice(0,7)===month)
+
+  .reduce((s,r)=>s+Number(r.amount||0),0);
+
+ $('allTotal').textContent=money(total);
+
+ $('allCount').textContent=records.length+' 筆';
+
+ $('monthTotal').textContent=money(monthly);
+
+ $('grandTotal').textContent=money(total);
+
+ const totals=$('categoryTotals');
+
+ totals.replaceChildren();
+
+ categories.forEach(category=>{
+
+  const amount=records.filter(r=>r.category===category)
+
+   .reduce((s,r)=>s+Number(r.amount||0),0);
+
+  const row=document.createElement('div');row.className='catrow';
+
+  const line=document.createElement('div');line.className='catline';
+
+  const name=document.createElement('span');name.textContent=category;
+
+  const value=document.createElement('strong');value.textContent=money(amount);
+
+  line.append(name,value);
+
+  const bar=document.createElement('div');bar.className='bar';
+
+  const fill=document.createElement('span');
+
+  fill.style.width=(total>0?Math.min(100,amount/total*100):0)+'%';
+
+  bar.appendChild(fill);
+
+  row.append(line,bar);totals.appendChild(row);
+
+ });
+
+ const grand=document.createElement('div');grand.className='catrow';
+
+ const grandLine=document.createElement('div');grandLine.className='catline';
+
+ const grandName=document.createElement('strong');grandName.textContent='全部分類總計';
+
+ const grandValue=document.createElement('strong');grandValue.textContent=money(total);
+
+ grandLine.append(grandName,grandValue);grand.appendChild(grandLine);totals.appendChild(grand);
+
+ const q=$('searchInput').value.trim().toLowerCase();
+
+ const cat=$('filterCategory').value;
+
+ const st=$('filterStatus').value;
+
+ let shown=records.filter(r=>
+
+  (!cat||r.category===cat)&&(!st||r.status===st)&&
+
+  ((r.shop||'')+' '+(r.note||'')+' '+(r.pickup||'')+' '+(r.payment||'')).toLowerCase().includes(q)
+
+ );
+
+ const sort=$('sortOrder').value;
+
+ shown.sort((a,b)=>{
+
+  if(sort==='old')return (a.date||'').localeCompare(b.date||'');
+
+  if(sort==='high')return Number(b.amount)-Number(a.amount);
+
+  if(sort==='low')return Number(a.amount)-Number(b.amount);
+
+  return (b.date||'').localeCompare(a.date||'');
+
+ });
+
+ const list=$('recordsList');list.replaceChildren();
+
+ if(!shown.length){
+
+  const empty=document.createElement('div');empty.className='empty';
+
+  empty.textContent=records.length?'沒有符合條件的紀錄 ♡':'還沒有購物紀錄，新增第一筆吧 ♡';
+
+  list.appendChild(empty);return;
+
+ }
+
+ shown.forEach(r=>{
+
+  const card=document.createElement('div');card.className='record';
+
+  const head=document.createElement('div');head.className='recordhead';
+
+  const name=document.createElement('div');name.className='recordname';name.textContent=r.shop||'未命名店家';
+
+  const amount=document.createElement('div');amount.className='amount';amount.textContent=money(r.amount);
+
+  head.append(name,amount);
+
+  const tags=document.createElement('div');tags.style.marginTop='8px';
+
+  [r.category,r.pickup,r.payment,r.status].filter(Boolean).forEach(t=>{
+
+   const tag=document.createElement('span');tag.className='tag';tag.textContent=t;tags.appendChild(tag);
+
+  });
+
+  const meta=document.createElement('div');meta.className='meta';meta.style.whiteSpace='pre-line';
+
+  meta.textContent='購買日期：'+(r.date||'未填寫')+(r.note?'\n備註：'+r.note:'');
+
+  const actions=document.createElement('div');actions.className='actions';
+
+  const edit=document.createElement('button');edit.className='secondary';edit.type='button';edit.textContent='修改紀錄';
+
+  edit.addEventListener('click',()=>editRecord(r.id));
+
+  const del=document.createElement('button');del.className='danger';del.type='button';del.textContent='刪除紀錄';
+
+  del.addEventListener('click',()=>{
+
+   if(!confirm('確定刪除「'+r.shop+'」這筆紀錄嗎？'))return;
+
+   const previous=records;records=records.filter(x=>x.id!==r.id);
+
+   if(!saveRecords()){records=previous;return;}
+
+   if(editingId===r.id)resetForm();render();
+
+  });
+
+  actions.append(edit,del);card.append(head,tags,meta,actions);list.appendChild(card);
+
+ });
+
+}
+
+function editRecord(id){
+
+ const r=records.find(x=>x.id===id);if(!r)return;
+
+ editingId=id;
+
+ let shopChoice=r.shopChoice||'';
+
+ let shopCustom=r.shopCustom||'';
+
+ if(!shopChoice){
+
+  if(shops.includes(r.shop))shopChoice=r.shop;
+
+  else if((r.shop||'').startsWith('蝦皮｜')){shopChoice='蝦皮';shopCustom=r.shop.slice(4);}
+
+  else{shopChoice='其他';shopCustom=r.shop||'';}
+
+ }
+
+ $('shopChoice').value=shopChoice;
+
+ $('customShop').value=shopCustom;
+
+ $('amountInput').value=r.amount??'';
+
+ $('dateInput').value=r.date||todayString();
+
+ $('category').value=categories.includes(r.category)?r.category:'其他';
+
+ const knownPickup=['7-ELEVEN','全家','蝦皮'];
+
+ const pickupChoice=r.pickupChoice||(knownPickup.includes(r.pickup)?r.pickup:'其他');
+
+ $('pickup').value=pickupChoice;
+
+ $('customPickup').value=r.pickupCustom||(pickupChoice==='其他'?(r.pickup||''):'');
+
+ const payChoice=r.paymentChoice||(paymentOptions.includes(r.payment)?r.payment:'其他');
+
+ $('paymentChoice').value=payChoice;
+
+ $('customPay').value=r.paymentCustom||(payChoice==='其他'?(r.payment||''):'');
+
+ $('status').value=['備貨中','已出貨','到貨未取','已取貨'].includes(r.status)?r.status:'備貨中';
+
+ $('noteInput').value=r.note||'';
+
+ updateCustomFields();
+
+ $('formTitle').textContent='♡ 修改購物紀錄';
+
+ $('saveBtn').textContent='儲存修改';
+
+ $('cancelEdit').style.display='block';
+
+ $('formTitle').scrollIntoView({behavior:'smooth',block:'start'});
+
+}
+
+function resetForm(){
+
+ editingId=null;$('shoppingForm').reset();
+
+ $('dateInput').value=todayString();
+
+ updateCustomFields();
+
+ $('formTitle').textContent='♡ 新增購物紀錄';
+
+ $('saveBtn').textContent='＋ 儲存購物紀錄';
+
+ $('cancelEdit').style.display='none';
+
+}
+
+$('cancelEdit').addEventListener('click',resetForm);
+
+$('shoppingForm').addEventListener('submit',e=>{
+
+ e.preventDefault();
+
+ const shop=getShop(),payment=getPayment(),pickup=getPickup();
+
+ const amount=Number($('amountInput').value),date=$('dateInput').value;
+
+ if(!shop||!payment||!pickup||!date||!Number.isFinite(amount)||amount<0){
+
+  alert('請確認店家、金額、日期、取貨地點及付款方式。');return;
+
+ }
+
+ const previous=records.map(r=>({...r}));
+
+ const sc=$('shopChoice').value,pc=$('paymentChoice').value,lc=$('pickup').value;
+
+ const record={
+
+  id:editingId||(Date.now()+'-'+Math.random().toString(36).slice(2,8)),
+
+  shop,shopChoice:sc,shopCustom:(sc==='蝦皮'||sc==='其他')?$('customShop').value.trim():'',
+
+  amount,date,category:$('category').value,
+
+  pickup,pickupChoice:lc,pickupCustom:lc==='其他'?pickup:'',
+
+  payment,paymentChoice:pc,paymentCustom:pc==='其他'?payment:'',
+
+  status:$('status').value,note:$('noteInput').value.trim()
+
+ };
+
+ if(editingId)records=records.map(r=>r.id===editingId?record:r);
+
+ else records.push(record);
+
+ if(!saveRecords()){records=previous;return;}
+
+ resetForm();render();alert('購物紀錄已成功儲存 ♡');
+
+});
+
+['searchInput','filterCategory','filterStatus','sortOrder'].forEach(id=>{
+
+ $(id).addEventListener(id==='searchInput'?'input':'change',render);
+
+});
+
+updateCustomFields();
+
+render();
+
+</script>
+
+</body>
+
+</html>
