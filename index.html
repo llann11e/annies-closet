@@ -106,7 +106,21 @@ button{font:inherit;cursor:pointer;border:0;border-radius:9px;padding:11px 13px}
 
 .footer{text-align:center;color:#b49aa2;font:12px Georgia,serif;letter-spacing:2px;padding:12px}
 
+.month-review-top{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end}
+
+.month-review-total{background:#f8edf0;border-radius:12px;padding:15px;margin:12px 0}
+
+.month-review-total small{display:block;color:var(--muted);font-size:12px}
+
+.month-review-total strong{display:block;color:#ae7184;font-size:26px;margin-top:5px}
+
+.month-review-count{font-size:12px;color:var(--muted);margin-top:4px}
+
+.month-detail{border-top:1px solid var(--line);padding:13px 0}
+
 @media(max-width:370px){.stat strong{font-size:12px}.panel{padding:13px}.grid{gap:0 8px}.totalbar strong{font-size:19px}}
+
+@media(max-width:370px){.month-review-top{grid-template-columns:1fr}}
 
 </style>
 
@@ -352,6 +366,52 @@ button{font:inherit;cursor:pointer;border:0;border-radius:9px;padding:11px 13px}
 
 </section>
 
+<section class="panel" id="monthReviewPanel">
+
+<h2>♡ 月份花費回顧</h2>
+
+<p class="note">選擇月份，查看該月總花費、購買筆數及各分類支出。</p>
+
+<div class="month-review-top">
+
+<div class="field">
+
+<label for="reviewMonth">選擇要查看的月份</label>
+
+<input id="reviewMonth" type="month">
+
+</div>
+
+<div class="field">
+
+<label>該月購買筆數</label>
+
+<strong id="reviewCount" style="display:block;color:#ae7184;font-size:21px;padding:8px 0">0 筆</strong>
+
+</div>
+
+</div>
+
+<div class="month-review-total">
+
+<small id="reviewMonthLabel">該月總花費</small>
+
+<strong id="reviewTotal">$0</strong>
+
+<div class="month-review-count" id="reviewSubtitle">0 筆購物紀錄</div>
+
+</div>
+
+<h2 style="margin-top:18px">各分類花費</h2>
+
+<div id="reviewCategoryTotals"></div>
+
+<h2 style="margin-top:18px">該月購買明細</h2>
+
+<div id="reviewDetails"></div>
+
+</section>
+
 <div class="footer">MADE WITH LOVE ♡ ANNIE</div>
 
 </main>
@@ -393,6 +453,8 @@ function todayString(){
 }
 
 $('dateInput').value=todayString();
+
+$('reviewMonth').value=todayString().slice(0,7);
 
 function updateCustomFields(){
 
@@ -458,9 +520,177 @@ function getPickup(){
 
 function saveRecords(){
 
- try{localStorage.setItem(STORAGE_KEY,JSON.stringify(records));return true;}
+ try{
 
- catch(e){alert('儲存失敗，請確認瀏覽器儲存空間，並先備份資料。');return false;}
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(records));
+
+  return true;
+
+ }catch(e){
+
+  alert('儲存失敗，請確認瀏覽器儲存空間，並先備份資料。');
+
+  return false;
+
+ }
+
+}
+
+function renderMonthReview(){
+
+ const selectedMonth=$('reviewMonth').value||todayString().slice(0,7);
+
+ const monthRecords=records.filter(r=>(r.date||'').slice(0,7)===selectedMonth)
+
+  .slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+
+ const monthlyTotal=monthRecords.reduce((sum,r)=>sum+Number(r.amount||0),0);
+
+ $('reviewMonthLabel').textContent=selectedMonth.replace('-',' 年 ')+' 月總花費';
+
+ $('reviewTotal').textContent=money(monthlyTotal);
+
+ $('reviewCount').textContent=monthRecords.length+' 筆';
+
+ $('reviewSubtitle').textContent=monthRecords.length+' 筆購物紀錄';
+
+ const categoryWrap=$('reviewCategoryTotals');
+
+ categoryWrap.replaceChildren();
+
+ categories.forEach(category=>{
+
+  const amount=monthRecords.filter(r=>r.category===category)
+
+   .reduce((sum,r)=>sum+Number(r.amount||0),0);
+
+  const row=document.createElement('div');
+
+  row.className='catrow';
+
+  const line=document.createElement('div');
+
+  line.className='catline';
+
+  const name=document.createElement('span');
+
+  name.textContent=category;
+
+  const value=document.createElement('strong');
+
+  value.textContent=money(amount);
+
+  line.append(name,value);
+
+  const bar=document.createElement('div');
+
+  bar.className='bar';
+
+  const fill=document.createElement('span');
+
+  fill.style.width=(monthlyTotal>0?Math.min(100,amount/monthlyTotal*100):0)+'%';
+
+  bar.appendChild(fill);
+
+  row.append(line,bar);
+
+  categoryWrap.appendChild(row);
+
+ });
+
+ const grand=document.createElement('div');
+
+ grand.className='catrow';
+
+ const grandLine=document.createElement('div');
+
+ grandLine.className='catline';
+
+ const grandName=document.createElement('strong');
+
+ grandName.textContent='該月總計';
+
+ const grandValue=document.createElement('strong');
+
+ grandValue.textContent=money(monthlyTotal);
+
+ grandLine.append(grandName,grandValue);
+
+ grand.appendChild(grandLine);
+
+ categoryWrap.appendChild(grand);
+
+ const details=$('reviewDetails');
+
+ details.replaceChildren();
+
+ if(!monthRecords.length){
+
+  const empty=document.createElement('div');
+
+  empty.className='empty';
+
+  empty.textContent='這個月份尚無購物紀錄 ♡';
+
+  details.appendChild(empty);
+
+  return;
+
+ }
+
+ monthRecords.forEach(r=>{
+
+  const card=document.createElement('div');
+
+  card.className='month-detail';
+
+  const head=document.createElement('div');
+
+  head.className='recordhead';
+
+  const name=document.createElement('div');
+
+  name.className='recordname';
+
+  name.textContent=r.shop||'未命名店家';
+
+  const amount=document.createElement('div');
+
+  amount.className='amount';
+
+  amount.textContent=money(r.amount);
+
+  head.append(name,amount);
+
+  const tags=document.createElement('div');
+
+  tags.style.marginTop='8px';
+
+  [r.category,r.pickup,r.payment,r.status].filter(Boolean).forEach(t=>{
+
+   const tag=document.createElement('span');
+
+   tag.className='tag';
+
+   tag.textContent=t;
+
+   tags.appendChild(tag);
+
+  });
+
+  const meta=document.createElement('div');
+
+  meta.className='meta';
+
+  meta.style.whiteSpace='pre-line';
+
+  meta.textContent='購買日期：'+(r.date||'未填寫')+'\n購買內容：'+(r.note||'未填寫備註');
+
+  card.append(head,tags,meta);
+
+  details.appendChild(card);
+
+ });
 
 }
 
@@ -492,17 +722,27 @@ function render(){
 
    .reduce((s,r)=>s+Number(r.amount||0),0);
 
-  const row=document.createElement('div');row.className='catrow';
+  const row=document.createElement('div');
 
-  const line=document.createElement('div');line.className='catline';
+  row.className='catrow';
 
-  const name=document.createElement('span');name.textContent=category;
+  const line=document.createElement('div');
 
-  const value=document.createElement('strong');value.textContent=money(amount);
+  line.className='catline';
+
+  const name=document.createElement('span');
+
+  name.textContent=category;
+
+  const value=document.createElement('strong');
+
+  value.textContent=money(amount);
 
   line.append(name,value);
 
-  const bar=document.createElement('div');bar.className='bar';
+  const bar=document.createElement('div');
+
+  bar.className='bar';
 
   const fill=document.createElement('span');
 
@@ -510,19 +750,33 @@ function render(){
 
   bar.appendChild(fill);
 
-  row.append(line,bar);totals.appendChild(row);
+  row.append(line,bar);
+
+  totals.appendChild(row);
 
  });
 
- const grand=document.createElement('div');grand.className='catrow';
+ const grand=document.createElement('div');
 
- const grandLine=document.createElement('div');grandLine.className='catline';
+ grand.className='catrow';
 
- const grandName=document.createElement('strong');grandName.textContent='全部分類總計';
+ const grandLine=document.createElement('div');
 
- const grandValue=document.createElement('strong');grandValue.textContent=money(total);
+ grandLine.className='catline';
 
- grandLine.append(grandName,grandValue);grand.appendChild(grandLine);totals.appendChild(grand);
+ const grandName=document.createElement('strong');
+
+ grandName.textContent='全部分類總計';
+
+ const grandValue=document.createElement('strong');
+
+ grandValue.textContent=money(total);
+
+ grandLine.append(grandName,grandValue);
+
+ grand.appendChild(grandLine);
+
+ totals.appendChild(grand);
 
  const q=$('searchInput').value.trim().toLowerCase();
 
@@ -552,71 +806,127 @@ function render(){
 
  });
 
- const list=$('recordsList');list.replaceChildren();
+ const list=$('recordsList');
+
+ list.replaceChildren();
 
  if(!shown.length){
 
-  const empty=document.createElement('div');empty.className='empty';
+  const empty=document.createElement('div');
+
+  empty.className='empty';
 
   empty.textContent=records.length?'沒有符合條件的紀錄 ♡':'還沒有購物紀錄，新增第一筆吧 ♡';
 
-  list.appendChild(empty);return;
+  list.appendChild(empty);
+
+ }else{
+
+  shown.forEach(r=>{
+
+   const card=document.createElement('div');
+
+   card.className='record';
+
+   const head=document.createElement('div');
+
+   head.className='recordhead';
+
+   const name=document.createElement('div');
+
+   name.className='recordname';
+
+   name.textContent=r.shop||'未命名店家';
+
+   const amount=document.createElement('div');
+
+   amount.className='amount';
+
+   amount.textContent=money(r.amount);
+
+   head.append(name,amount);
+
+   const tags=document.createElement('div');
+
+   tags.style.marginTop='8px';
+
+   [r.category,r.pickup,r.payment,r.status].filter(Boolean).forEach(t=>{
+
+    const tag=document.createElement('span');
+
+    tag.className='tag';
+
+    tag.textContent=t;
+
+    tags.appendChild(tag);
+
+   });
+
+   const meta=document.createElement('div');
+
+   meta.className='meta';
+
+   meta.style.whiteSpace='pre-line';
+
+   meta.textContent='購買日期：'+(r.date||'未填寫')+(r.note?'\n備註：'+r.note:'');
+
+   const actions=document.createElement('div');
+
+   actions.className='actions';
+
+   const edit=document.createElement('button');
+
+   edit.className='secondary';
+
+   edit.type='button';
+
+   edit.textContent='修改紀錄';
+
+   edit.addEventListener('click',()=>editRecord(r.id));
+
+   const del=document.createElement('button');
+
+   del.className='danger';
+
+   del.type='button';
+
+   del.textContent='刪除紀錄';
+
+   del.addEventListener('click',()=>{
+
+    if(!confirm('確定刪除「'+r.shop+'」這筆紀錄嗎？'))return;
+
+    const previous=records;
+
+    records=records.filter(x=>x.id!==r.id);
+
+    if(!saveRecords()){records=previous;return;}
+
+    if(editingId===r.id)resetForm();
+
+    render();
+
+   });
+
+   actions.append(edit,del);
+
+   card.append(head,tags,meta,actions);
+
+   list.appendChild(card);
+
+  });
 
  }
 
- shown.forEach(r=>{
-
-  const card=document.createElement('div');card.className='record';
-
-  const head=document.createElement('div');head.className='recordhead';
-
-  const name=document.createElement('div');name.className='recordname';name.textContent=r.shop||'未命名店家';
-
-  const amount=document.createElement('div');amount.className='amount';amount.textContent=money(r.amount);
-
-  head.append(name,amount);
-
-  const tags=document.createElement('div');tags.style.marginTop='8px';
-
-  [r.category,r.pickup,r.payment,r.status].filter(Boolean).forEach(t=>{
-
-   const tag=document.createElement('span');tag.className='tag';tag.textContent=t;tags.appendChild(tag);
-
-  });
-
-  const meta=document.createElement('div');meta.className='meta';meta.style.whiteSpace='pre-line';
-
-  meta.textContent='購買日期：'+(r.date||'未填寫')+(r.note?'\n備註：'+r.note:'');
-
-  const actions=document.createElement('div');actions.className='actions';
-
-  const edit=document.createElement('button');edit.className='secondary';edit.type='button';edit.textContent='修改紀錄';
-
-  edit.addEventListener('click',()=>editRecord(r.id));
-
-  const del=document.createElement('button');del.className='danger';del.type='button';del.textContent='刪除紀錄';
-
-  del.addEventListener('click',()=>{
-
-   if(!confirm('確定刪除「'+r.shop+'」這筆紀錄嗎？'))return;
-
-   const previous=records;records=records.filter(x=>x.id!==r.id);
-
-   if(!saveRecords()){records=previous;return;}
-
-   if(editingId===r.id)resetForm();render();
-
-  });
-
-  actions.append(edit,del);card.append(head,tags,meta,actions);list.appendChild(card);
-
- });
+ renderMonthReview();
 
 }
 
 function editRecord(id){
 
- const r=records.find(x=>x.id===id);if(!r)return;
+ const r=records.find(x=>x.id===id);
+
+ if(!r)return;
 
  editingId=id;
 
@@ -628,9 +938,19 @@ function editRecord(id){
 
   if(shops.includes(r.shop))shopChoice=r.shop;
 
-  else if((r.shop||'').startsWith('蝦皮｜')){shopChoice='蝦皮';shopCustom=r.shop.slice(4);}
+  else if((r.shop||'').startsWith('蝦皮｜')){
 
-  else{shopChoice='其他';shopCustom=r.shop||'';}
+   shopChoice='蝦皮';
+
+   shopCustom=r.shop.slice(4);
+
+  }else{
+
+   shopChoice='其他';
+
+   shopCustom=r.shop||'';
+
+  }
 
  }
 
@@ -676,7 +996,9 @@ function editRecord(id){
 
 function resetForm(){
 
- editingId=null;$('shoppingForm').reset();
+ editingId=null;
+
+ $('shoppingForm').reset();
 
  $('dateInput').value=todayString();
 
@@ -696,33 +1018,63 @@ $('shoppingForm').addEventListener('submit',e=>{
 
  e.preventDefault();
 
- const shop=getShop(),payment=getPayment(),pickup=getPickup();
+ const shop=getShop();
 
- const amount=Number($('amountInput').value),date=$('dateInput').value;
+ const payment=getPayment();
+
+ const pickup=getPickup();
+
+ const amount=Number($('amountInput').value);
+
+ const date=$('dateInput').value;
 
  if(!shop||!payment||!pickup||!date||!Number.isFinite(amount)||amount<0){
 
-  alert('請確認店家、金額、日期、取貨地點及付款方式。');return;
+  alert('請確認店家、金額、日期、取貨地點及付款方式。');
+
+  return;
 
  }
 
  const previous=records.map(r=>({...r}));
 
- const sc=$('shopChoice').value,pc=$('paymentChoice').value,lc=$('pickup').value;
+ const sc=$('shopChoice').value;
+
+ const pc=$('paymentChoice').value;
+
+ const lc=$('pickup').value;
 
  const record={
 
   id:editingId||(Date.now()+'-'+Math.random().toString(36).slice(2,8)),
 
-  shop,shopChoice:sc,shopCustom:(sc==='蝦皮'||sc==='其他')?$('customShop').value.trim():'',
+  shop,
 
-  amount,date,category:$('category').value,
+  shopChoice:sc,
 
-  pickup,pickupChoice:lc,pickupCustom:lc==='其他'?pickup:'',
+  shopCustom:(sc==='蝦皮'||sc==='其他')?$('customShop').value.trim():'',
 
-  payment,paymentChoice:pc,paymentCustom:pc==='其他'?payment:'',
+  amount,
 
-  status:$('status').value,note:$('noteInput').value.trim()
+  date,
+
+  category:$('category').value,
+
+  pickup,
+
+  pickupChoice:lc,
+
+  pickupCustom:lc==='其他'?pickup:'',
+
+  payment,
+
+  paymentChoice:pc,
+
+  paymentCustom:pc==='其他'?payment:'',
+
+  status:$('status').value,
+
+  note:$('noteInput').value.trim()
 
  };
 
@@ -730,9 +1082,19 @@ $('shoppingForm').addEventListener('submit',e=>{
 
  else records.push(record);
 
- if(!saveRecords()){records=previous;return;}
+ if(!saveRecords()){
 
- resetForm();render();alert('購物紀錄已成功儲存 ♡');
+  records=previous;
+
+  return;
+
+ }
+
+ resetForm();
+
+ render();
+
+ alert('購物紀錄已成功儲存 ♡');
 
 });
 
@@ -741,6 +1103,8 @@ $('shoppingForm').addEventListener('submit',e=>{
  $(id).addEventListener(id==='searchInput'?'input':'change',render);
 
 });
+
+$('reviewMonth').addEventListener('change',renderMonthReview);
 
 updateCustomFields();
 
