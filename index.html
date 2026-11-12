@@ -113,12 +113,33 @@ textarea{min-height:90px;resize:vertical}
 }
 .photo-item{position:relative;display:inline-block}
 .photo-remove{
-  position:absolute;top:-6px;right:-6px;width:24px;height:24px;
+  position:absolute;top:-5px;right:-5px;width:20px;height:20px;
   border-radius:50%;border:0;background:var(--deep);color:white;
-  font-size:13px;line-height:24px;padding:0;text-align:center;
+  font-size:12px;line-height:20px;padding:0;text-align:center;
 }
-.photo-preview{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-.photo-preview img{width:85px;height:85px;object-fit:cover;border-radius:12px;border:1px solid var(--line)}
+.photo-preview{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.photo-preview img{
+  width:52px;height:52px;object-fit:cover;
+  border-radius:10px;border:1px solid var(--line);
+  cursor:zoom-in;transition:transform .15s;
+}
+.photo-preview img:active{transform:scale(0.95)}
+.lightbox{
+  display:none;position:fixed;z-index:50;inset:0;
+  background:#000d;align-items:center;justify-content:center;
+  padding:20px;flex-direction:column;
+}
+.lightbox.open{display:flex}
+.lightbox img{
+  max-width:95vw;max-height:82vh;border-radius:14px;
+  box-shadow:0 8px 30px #0008;object-fit:contain;
+}
+.lightbox-close{
+  position:fixed;top:18px;right:18px;width:40px;height:40px;
+  border-radius:50%;border:1px solid #fff4;background:#fff2;
+  color:white;font-size:22px;line-height:36px;text-align:center;
+}
+.lightbox-tip{color:#fffb;font-size:13px;margin-top:12px}
 .back{margin-bottom:15px}
 .empty{text-align:center;padding:25px;color:#b18e98}
 footer{text-align:center;color:#b18e98;font:12px Georgia;padding:20px}
@@ -198,7 +219,7 @@ footer{text-align:center;color:#b18e98;font:12px Georgia;padding:20px}
   <label>商品名稱</label>
   <input id="product" placeholder="請輸入商品名稱">
 
-  <label>商品圖片</label>
+  <label>商品圖片（自動壓縮省空間，點擊縮圖可放大）</label>
   <input id="photos" type="file" accept="image/*" multiple onchange="previewPhotos()">
   <div class="photo-preview" id="photoPreview"></div>
 
@@ -315,7 +336,7 @@ footer{text-align:center;color:#b18e98;font:12px Georgia;padding:20px}
   <label>商品名稱</label>
   <input id="editProduct" placeholder="請輸入商品名稱">
 
-  <label>商品圖片</label>
+  <label>商品圖片（自動壓縮省空間，點擊縮圖可放大）</label>
   <input id="editPhotos" type="file" accept="image/*" multiple onchange="previewEditPhotos()">
   <div class="photo-preview" id="editPhotoPreview"></div>
 
@@ -327,6 +348,12 @@ footer{text-align:center;color:#b18e98;font:12px Georgia;padding:20px}
    <button class="btn" onclick="updateRecord()">儲存修改 ♡</button>
   </div>
  </div>
+</div>
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+ <button type="button" class="lightbox-close" onclick="closeLightbox()">×</button>
+ <img id="lightboxImg" src="" onclick="event.stopPropagation()">
+ <div class="lightbox-tip">點擊空白處或右上角 × 關閉</div>
 </div>
 
 <footer>Annie's Closet ♡ MY SHOPPING DIARY</footer>
@@ -417,22 +444,69 @@ function getValue(id,customId){
  }
  return value;
 }
-function previewPhotos(){
- photoData=[];
- const files=[...document.getElementById("photos").files];
- const preview=document.getElementById("photoPreview");
- preview.innerHTML="";
- files.forEach(file=>{
+
+/* 自動縮小並壓縮圖片，兼顧瀏覽器儲存空間與放大清晰度 */
+function compressImage(file,maxSize=1000,quality=0.72){
+ return new Promise((resolve,reject)=>{
   const reader=new FileReader();
+  reader.onerror=reject;
   reader.onload=e=>{
-   photoData.push(e.target.result);
-   const img=document.createElement("img");
+   const img=new Image();
+   img.onerror=reject;
+   img.onload=()=>{
+    let w=img.width,h=img.height;
+    if(w>maxSize||h>maxSize){
+     if(w>h){h=Math.round(h*maxSize/w);w=maxSize;}
+     else{w=Math.round(w*maxSize/h);h=maxSize;}
+    }
+    const canvas=document.createElement("canvas");
+    canvas.width=w;canvas.height=h;
+    const ctx=canvas.getContext("2d");
+    ctx.fillStyle="#ffffff";
+    ctx.fillRect(0,0,w,h);
+    ctx.drawImage(img,0,0,w,h);
+    resolve(canvas.toDataURL("image/jpeg",quality));
+   };
    img.src=e.target.result;
-   preview.appendChild(img);
   };
   reader.readAsDataURL(file);
  });
 }
+
+function openLightbox(src){
+ document.getElementById("lightboxImg").src=src;
+ document.getElementById("lightbox").classList.add("open");
+}
+function closeLightbox(){
+ document.getElementById("lightbox").classList.remove("open");
+ document.getElementById("lightboxImg").src="";
+}
+
+function renderAddPhotoPreview(){
+ document.getElementById("photoPreview").innerHTML=photoData.map((src,i)=>
+ `<div class="photo-item">
+  <img src="${src}" onclick="openLightbox(this.src)" title="點擊放大檢視">
+  <button type="button" class="photo-remove" onclick="removeAddPhoto(${i})">×</button>
+ </div>`
+ ).join("");
+}
+function removeAddPhoto(idx){
+ photoData.splice(idx,1);
+ renderAddPhotoPreview();
+}
+async function previewPhotos(){
+ const files=[...document.getElementById("photos").files];
+ if(!files.length)return;
+ for(const file of files){
+  try{
+   const compressed=await compressImage(file);
+   photoData.push(compressed);
+  }catch(e){}
+ }
+ renderAddPhotoPreview();
+ document.getElementById("photos").value="";
+}
+
 function saveRecord(){
  const shop=getValue("shop","shopCustom");
  const amount=Number(document.getElementById("amount").value);
@@ -449,7 +523,7 @@ function saveRecord(){
   status:document.getElementById("status").value,
   product:document.getElementById("product").value.trim(),
   note:document.getElementById("note").value.trim(),
-  photos:photoData
+  photos:[...photoData]
  };
  records.unshift(record);
  saveData();
@@ -524,7 +598,7 @@ function recordHTML(r){
  <div class="small">${escapeText(r.shop)}｜${r.date}</div>
  <div>${pill(r.category)}${pill(r.pickup)}${pill(r.payment)}${pill(r.status)}</div>
  ${r.note?`<p class="small">${escapeText(r.note)}</p>`:""}
- ${r.photos?.length?`<div class="photo-preview">${r.photos.map(p=>`<img src="${p}">`).join("")}</div>`:""}
+ ${r.photos?.length?`<div class="photo-preview">${r.photos.map(p=>`<img src="${p}" onclick="openLightbox(this.src)" title="點擊放大檢視">`).join("")}</div>`:""}
  <label>修改貨況</label>
  <select onchange="changeStatus(${r.id},this.value)">
  ${statusOptions.map(s=>`<option ${r.status===s?"selected":""}>${s}</option>`).join("")}
@@ -555,7 +629,7 @@ function setSelectOrCustom(selectId,inputId,options,val,isShop){
 function renderEditPhotoPreview(){
  document.getElementById("editPhotoPreview").innerHTML=editPhotoData.map((src,i)=>
  `<div class="photo-item">
-  <img src="${src}">
+  <img src="${src}" onclick="openLightbox(this.src)" title="點擊放大檢視">
   <button type="button" class="photo-remove" onclick="removeEditPhoto(${i})">×</button>
  </div>`
  ).join("");
@@ -564,16 +638,16 @@ function removeEditPhoto(idx){
  editPhotoData.splice(idx,1);
  renderEditPhotoPreview();
 }
-function previewEditPhotos(){
+async function previewEditPhotos(){
  const files=[...document.getElementById("editPhotos").files];
- files.forEach(file=>{
-  const reader=new FileReader();
-  reader.onload=e=>{
-   editPhotoData.push(e.target.result);
-   renderEditPhotoPreview();
-  };
-  reader.readAsDataURL(file);
- });
+ if(!files.length)return;
+ for(const file of files){
+  try{
+   const compressed=await compressImage(file);
+   editPhotoData.push(compressed);
+  }catch(e){}
+ }
+ renderEditPhotoPreview();
  document.getElementById("editPhotos").value="";
 }
 function openEdit(id){
